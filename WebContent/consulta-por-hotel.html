@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+<title>Consulta por hotel</title>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+
+<!-- jQuery library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+<!-- Latest compiled JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script> 
+</head>
+<body>
+	<div ng-app="comunicacionApp" ng-controller="comunicacionController" class="container">
+	
+	<br/><br/>
+	<div class="col-sm-4" style="border:solid 1px">
+	<div class="form-group">
+	<br/>
+	<label>Usuario administrador</label>
+	<input type="text" ng-model="usernameAdmin" class="form-control" style="width:40%"/>
+	<br/>
+	<label>Contrasenia</label>
+	<input type="password" ng-model="passwordAdmin" class="form-control" style="width:40%"/>
+	<br/>
+	<label>Nombre hotel:</label>
+	<input type="text" ng-model="nombreIntroducidoHotel" class="form-control" style="width:80%"/>
+	<hr>
+	<button ng-click="recuperarReservas(); recuperarHotel();" type="button">Consultar datos hotel y reservas</button>
+	</div>
+	</div>
+	
+	<div class="col-sm-6" style="border:solid 1px">
+		<h3>Datos hotel {{nombreIntroducidoHotel}}</h3>
+		<h4>Id: {{hotel.idHotel}}</h4>
+		<h4>Categoria: {{hotel.categoria}}*</h4>
+		<h4>Precio: {{hotel.precio}} Euros </h4>
+		<h4>Disponible: {{hotel.disponible}} </h4>
+	</div>
+
+	<br/><br/>
+
+	<div class="col-sm-11" style="border:solid 1px">
+	<h3>Reservas hotel {{nombreIntroducidoHotel}}</h3>
+	<div >
+		<table border="1" class="table table-striped table-bordered">
+			<thead><tr><th>Id reserva</th><th>Nombre Cliente</th><th>DNI</th><th>Id vuelo</th><th>Plazas</th></tr></thead>
+			<tbody><tr ng-repeat="r in reservas">
+				<td>{{r.idReserva}}</td>
+				<td>{{r.nombreCliente}}</td>
+				<td>{{r.dni}}</td>
+				<td>{{r.idVuelo}}</td>
+				<td>{{r.plazas}}</td>
+			</tr>
+		</tbody>
+		</table>
+		<h3>{{msgError}}</h3>	
+	</div>
+	<a href="index.html">Volver a inicio</a>
+	</div>
+
+	<script>
+		var app=angular.module("comunicacionApp",[]);
+		app.controller("comunicacionController",function($scope,$http){
+			$scope.reservas=[];
+			$scope.hotel;
+			$scope.nombreIntroducidoHotel;
+			$scope.usernameAdmin;
+			$scope.passwordAdmin;
+			$scope.msgError;
+			
+			$scope.recuperarReservas=function(){
+		       // Configuración de las credenciales para la autenticación básica
+		        let headers = {
+		            Authorization: 'Basic ' + btoa($scope.usernameAdmin + ':' + $scope.passwordAdmin)
+		        };
+				let url="http://localhost:9000/sreservas/viajes/reservas/" + $scope.nombreIntroducidoHotel;
+				$http.get(url, { headers: headers })
+				    .then(function(res){
+				        $scope.reservas = res.data;
+				        $scope.msgError = "";        
+				        console.log("Reservas:", $scope.reservas);    
+				    })
+				    .catch(function(error) {
+				        // Manejo de errores
+				        switch (error.status) {
+							case 401: $scope.msgError = "Usuario no registrado"; break;
+							case 403: $scope.msgError = "Usuario sin permisos"; break;
+							default: $scope.msgError = "Sin datos o error: "+ error.status + " - " + error.statusText; break; 
+						}
+				        console.log("Error:", error);
+				    });
+			}		
+
+			$scope.recuperarHotel=function(){
+				let url="http://localhost:9000/shoteles/viajes/hotel/" + $scope.nombreIntroducidoHotel;
+				$http.get(url).then(function(res){
+					$scope.hotel=res.data;	
+				});
+			}		
+
+		});
+	</script>
+	
+	
+</body>
+</html>

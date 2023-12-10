@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="ISO-8859-1">
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+<title>Realizar reserva</title>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+
+<!-- jQuery library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+<!-- Latest compiled JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script> 
+</head>
+<body>
+	<div ng-app="comunicacionApp" ng-controller="comunicacionController" class="container">
+	
+	<h1>Complete esta informacion</h1>
+	<div class="row">
+		
+		<div class="col-sm-6" style="border:solid 1px">
+		<br/>
+		<h3>Credenciales cliente</h3>
+		<div class="form-group">
+		<label>Usuario</label>
+		<input type="text" ng-model="username" class="form-control" style="width:40%"/>
+		<br/>
+		<label>Contraseña</label>
+		<input type="password" ng-model="password" class="form-control" style="width:40%"/>
+		</div>
+		
+		<br/><br/><br/>
+
+		<h3>Datos reserva</h3>
+		<div class="form-group">
+		<label>Nombre</label>
+		<input type="text" ng-model="nombreCliente" class="form-control" style="width:80%"/>
+		</div>
+		
+		<div class="form-group">
+		<label>DNI</label>
+		<input type="text" ng-model="dni" class="form-control" style="width:80%"/>
+		</div>
+		
+		<div class="form-group">
+		<label>Nro. plazas</label>
+		<input type="number" min="1" ng-model="plazas" class="form-control" style="width:80%"/>
+		</div>
+		
+		<div class="form-group">
+		<label>Hotel</label>
+		<select  ng-model="hotel" ng-init="cargarHotelesDisponibles()" class="form-control" style="width:90%">		
+			<option disabled selected value="">Seleccione uno entre los disponibles</option>
+			<option ng-repeat="h in hoteles" value="{{h.idHotel}}">{{h.nombre}} - {{h.categoria}}* - {{h.precio}} Euros</option>	
+		</select>
+		</div>
+		
+		<div class="form-group">
+		<label>Vuelo</label>
+		<select  ng-model="vuelo" ng-init="cargarVuelosDisponibles()" class="form-control" style="width:90%">		
+			<option disabled selected value="">Seleccione uno entre los disponibles, segun las plazas solicitadas</option>
+			<option ng-repeat="v in vuelos" value="{{v.idVuelo}}">{{v.compania}} - {{v.fecha}}* - {{v.precio}} Euros - {{v.plazasDisponibles}} plazas</option>	
+		</select>
+		</div>
+		
+		<br/>
+		<br/>
+		</div>
+	</div>
+		<br/>
+		
+		 <button ng-click="grabarReserva()" type="button">Reservar</button>
+		 <br/>
+     	<h3>{{msgError}}</h3>	
+		 <br/>
+  	 	<a href="index.html">Volver a inicio</a>
+
+	</div>
+	
+	<script>
+		var app=angular.module("comunicacionApp",[]);
+		app.controller("comunicacionController",function($scope,$http){
+			$scope.hoteles=[];
+			$scope.hotel;			
+			$scope.vuelos=[];
+			$scope.vuelo;			
+			$scope.plazas = 2;		
+			$scope.nombreCliente;
+			$scope.dni;
+			$scope.username;
+			$scope.password;
+			$scope.mostrarTabla=true;	
+			$scope.msgError;
+			
+			$scope.$watch('plazas', function(newVal, oldVal) {
+			    if (newVal !== oldVal) {
+			        $scope.cargarVuelosDisponibles();
+			    }
+			});
+						
+			$scope.cargarHotelesDisponibles=function(){				
+				let url = "http://localhost:9000/shoteles/viajes/hoteles-disponibles";	
+				$http.get(url).then(function(res){
+					$scope.hoteles=res.data;								
+				});
+			}
+			$scope.cargarVuelosDisponibles=function(){				
+				let numPlazas = $scope.plazas;
+				let url = "http://localhost:9000/svuelos/viajes/vuelos-disponibles/"+ $scope.plazas; 	
+				$http.get(url).then(function(res){
+					$scope.vuelos=res.data;								
+				});
+			};
+			$scope.grabarReserva=function(){
+		       // Configuración de las credenciales para la autenticación básica
+		        let headers = {
+		            Authorization: 'Basic ' + btoa($scope.username + ':' + $scope.password)
+		        };
+				
+				let url="http://localhost:9000/sreservas/viajes/reserva";
+				let ob=new Object();
+				ob.nombreCliente=$scope.nombreCliente;
+				ob.dni=$scope.dni;
+				ob.plazas=$scope.plazas;
+				ob.idHotel=$scope.hotel;
+				ob.idVuelo=$scope.vuelo;
+				$http.post(url,ob, { headers: headers })
+					.then(function(response) {
+					    if (response.status === 200) {
+							$scope.msgError = "La reserva se ha realizado correctamente";
+					    }
+					  })				
+				    .catch(function(error) {
+				        // Manejo de errores
+				        switch (error.status) {
+							case 401: $scope.msgError = "Usuario no registrado"; break;
+							default: $scope.msgError = "No se ha podido realizar la reserva. Error: "+ error.status + " - " + error.statusText; break; 
+						}
+				        console.log("Error:", error);
+				    });
+				
+			};
+			
+		});
+	
+	</script>
+</body>
+</html>
